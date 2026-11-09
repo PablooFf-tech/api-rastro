@@ -1,130 +1,65 @@
 # API de Rastro
 
-API RESTful para la plataforma de compraventa de segunda mano **Rastro**, construida con **Express**, **TypeScript** y el driver oficial de **MongoDB**.
+API en Express con TypeScript y el driver oficial de MongoDB (`mongodb`) para la entrega de Rastro.
 
----
+## Puesta en marcha
 
-## 📋 Requisitos previos
+1. Asegúrate de tener arrancado el contenedor de MongoDB:
+```bash
+docker start mongodb-practica
+```
 
-- **Node.js** (v20 o superior recomendado, v24 en CI)
-- **npm** (v10 o superior)
-- **Docker** con el contenedor `mongodb-practica` en ejecución en el puerto `27017`
+2. Instala las dependencias:
+```bash
+npm install
+```
 
----
+3. Crea el archivo `.env` a partir del ejemplo:
+```bash
+cp .env.example .env
+```
 
-## 🚀 Instalación y Configuración
-
-1. **Clonar el repositorio:**
-   ```bash
-   git clone https://github.com/PablooFf-tech/api-rastro.git
-   cd api-rastro
-   ```
-
-2. **Instalar dependencias:**
-   ```bash
-   npm install
-   ```
-
-3. **Variables de entorno:**
-   Copia el archivo de ejemplo `.env.example` a `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-   Asegúrate de que contenga los valores para tu base de datos local:
-   ```env
-   MONGODB_URI=mongodb://admin:admin_dev_123@localhost:27017/?authSource=admin
-   DB_NAME=rastro
-   ```
-
----
-
-## 🗄️ Carga de Datos Iniciales (Seed)
-
-El proyecto incluye un script reproducible en TypeScript (`src/seed.ts`) que resetea la base de datos `rastro` y carga las colecciones (`users`, `listings`, `offers`, `reviews`) con sus índices:
-
+4. Carga los datos iniciales e índices:
 ```bash
 npx tsx --env-file=.env src/seed.ts
 ```
 
-> **Aviso:** Este script ejecuta `dropDatabase()` en la base de datos `rastro`, restaurando el dataset original de prueba: 5 usuarios, 8 anuncios, 5 ofertas y 1 valoración.
+5. Arranca el servidor en modo desarrollo:
+```bash
+npm run dev
+```
 
----
+El servidor escucha en `http://localhost:3000`.
 
-## 💻 Ejecución del Servidor
+## Scripts
 
-- **Modo desarrollo (con recarga automática):**
-  ```bash
-  npm run dev
-  ```
-  El servidor escuchará en `http://localhost:3000`.
+- `npm run dev`: arranca el servidor con recarga en caliente (`tsx watch`).
+- `npm run lint`: pasa ESLint.
+- `npm run typecheck`: comprueba tipos con TypeScript (`tsc --noEmit`).
 
-- **Comprobar linters y tipos:**
-  ```bash
-  npm run lint        # ESLint
-  npm run typecheck   # Comprobación de tipos de TypeScript sin emitir código
-  ```
+## Rutas de la API
 
----
-
-## 📡 Endpoints de la API
-
-### Health Check
-- `GET /api/health`: Comprueba el estado del servidor y ejecuta un comando `ping` contra MongoDB.
+### Health check
+- `GET /api/health` — Comprueba la API y hace un ping a la base de datos.
 
 ### Anuncios (`/api/listings`)
-- `GET /api/listings`: Listado de anuncios ordenados por `publishedAt` descendente. Proyección optimizada. Admite query params opcionales:
-  - `category`: filtra por categoría exacta (ej. `Cars`, `Phones`).
-  - `city`: filtra por ciudad (ej. `Valencia`).
-  - `maxPrice`: filtra anuncios con precio menor o igual (ej. `100`). Devuelve `400` si no es numérico.
-- `GET /api/listings/:id`: Ficha detallada del anuncio. Incrementa de forma atómica el contador de `views` en 1 (`$inc`). Devuelve `400` si el id es inválido y `404` si no existe.
-- `POST /api/listings`: Publica un nuevo anuncio. Valida campos obligatorios, verifica que `sellerId` exista en `users` y copia su nombre de forma desnormalizada. Fuerza `status: AVAILABLE`, `views: 0`, `photos: []` y fecha actual, ignorando entradas no permitidas del cliente. Devuelve `201`.
-- `PATCH /api/listings/:id`: Actualiza el precio del anuncio (`price` obligatorio, >= 0). Devuelve `200` con el anuncio modificado.
-- `DELETE /api/listings/:id`: Elimina un anuncio. Devuelve `204` si se eliminó o `404` si no existía.
-- `GET /api/listings/:id/offers`: Devuelve todas las ofertas asociadas al anuncio indicado. Devuelve `404` si el anuncio no existe.
+- `GET /api/listings` — Lista de anuncios (admite filtros opcionales: `category`, `city`, `maxPrice`).
+- `GET /api/listings/:id` — Ficha completa de un anuncio (suma 1 a las visitas con `$inc`).
+- `POST /api/listings` — Crea un anuncio nuevo (valida campos y comprueba que el `sellerId` exista en `users`).
+- `PATCH /api/listings/:id` — Modifica el precio de un anuncio.
+- `DELETE /api/listings/:id` — Elimina un anuncio.
+- `GET /api/listings/:id/offers` — Lista las ofertas recibidas para ese anuncio.
 
 ### Ofertas (`/api/offers`)
-- `POST /api/offers`: Crea una nueva oferta de compra. Valida en orden estricto:
-  1. Formato de `listingId` y `buyerId` (400 si inválido).
-  2. `amount` mayor que 0 (400 si inválido).
-  3. Existencia del anuncio (400 si no existe).
-  4. Existencia del comprador (400 si no existe).
-  5. Disponibilidad del anuncio: solo se permite ofertar si `status === "AVAILABLE"` (409 Conflict si está vendido o reservado).
-  Almacena copias históricas desnormalizadas de anuncio y comprador. Devuelve `201`.
+- `POST /api/offers` — Crea una oferta sobre un anuncio. Valida que el anuncio y el comprador existan, y devuelve 409 si el anuncio no está disponible (`AVAILABLE`).
 
----
+## Pruebas
 
-## 🧪 Pruebas Reproducibles
+En el archivo `tests.http` están preparadas todas las peticiones de prueba (tanto casos válidos como casos de error de las tablas del enunciado). Se pueden ejecutar directamente con la extensión REST Client.
 
-Se incluye el archivo [`tests.http`](./tests.http) para probar todas las rutas (casos de éxito y casos de error de las tablas de pruebas de cada parte) usando la extensión **REST Client** de VS Code o similar.
-
-Para restaurar los datos tras pruebas que modifiquen o borren registros:
+Si alguna prueba modifica o borra datos, se puede volver al estado inicial ejecutando de nuevo el seed:
 ```bash
 npx tsx --env-file=.env src/seed.ts
 ```
 
----
-
-## 📁 Estructura del Proyecto
-
-```text
-api-rastro/
-├── .github/
-│   └── workflows/
-│       └── ci.yml          # Flujo de CI (HTMLHint + ESLint)
-├── src/
-│   ├── routes/
-│   │   ├── listings.ts     # Endpoints de anuncios
-│   │   └── offers.ts       # Endpoints de ofertas
-│   ├── db.ts               # Conexión con MongoDB
-│   ├── index.ts            # Servidor Express, middlewares y health check
-│   ├── seed.ts             # Script de carga inicial de datos e índices
-│   └── types.ts            # Definiciones de tipos TypeScript
-├── .env.example            # Plantilla de variables de entorno
-├── .gitignore
-├── eslint.config.mjs       # Configuración de ESLint con TypeScript ESLint
-├── package.json
-├── README.md               # Documentación general
-├── respuestas.md           # Respuestas a las preguntas del enunciado
-├── tests.http              # Peticiones de prueba reproducibles
-└── tsconfig.json           # Configuración de TypeScript
-```
+Las preguntas teóricas y la línea del error del Ejercicio 0 están en `respuestas.md`.
