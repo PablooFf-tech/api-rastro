@@ -13,7 +13,7 @@ Se recibe un código `500` con `{"error": "Error interno del servidor"}`. Ha res
 Porque todos los query params de una URL llegan como cadenas de texto (`string`). En la base de datos, `price` está almacenado como un número (`380`), por lo que MongoDB busca `{ price: "380" }` y no coincide ningún documento debido a la discrepancia de tipos.
 
 ## Pregunta 3
-<!-- ¿Por qué la API ignora views y status si el cliente los envía? ¿Qué podría hacer alguien si no los ignorara? -->
+Porque son campos controlados exclusivamente por la lógica del servidor para garantizar las reglas de negocio (un anuncio nuevo siempre empieza con 0 visitas y disponible). Si el cliente pudiera enviarlos, un usuario malintencionado podría manipular las visitas para aparentar falsa popularidad o alterar el estado inicial del producto (por ejemplo marcándolo directamente como vendido).
 
 ## Pregunta 4
 <!-- Ana baja el iPhone de 380 a 350 €. La oferta de Sara guarda una copia: listing.price: 380. ¿Debe tu PATCH cambiar también esa copia? ¿Por qué? -->
