@@ -19,7 +19,7 @@ Porque son campos controlados exclusivamente por la lógica del servidor para ga
 No debe cambiarla. La oferta almacena una instantánea histórica (`listing.price`) que refleja las condiciones y el precio del anuncio en el momento exacto en el que se realizó la oferta. Modificar esa copia alteraría el contexto de la negociación pasada y rompería la trazabilidad de la oferta.
 
 ## Pregunta 5
-<!-- ¿Por qué ofertar por un anuncio vendido es 409 y no 400? -->
+Porque la petición del cliente está bien estructurada y tiene tipos válidos, pero entra en conflicto con el estado actual del recurso en la base de datos (el anuncio ya está vendido o reservado, no disponible), lo que corresponde al código HTTP `409 Conflict`.
 
 ## Pregunta 6
-<!-- ¿Qué comprueba MongoDB por ti en esta API? ¿Y qué has tenido que comprobar tú en el código? Pon un ejemplo de cada. -->
+MongoDB comprueba la unicidad de los índices únicos (por ejemplo, `email` único en `users`) y la validez sintáctica BSON de los identificadores. En el código de la API hemos tenido que comprobar la integridad referencial (que `sellerId`, `buyerId` o `listingId` existan en sus respectivas colecciones), los tipos de datos en el body (`price` o `amount` como números estrictos y positivos) y las reglas de negocio como el estado `AVAILABLE`.
