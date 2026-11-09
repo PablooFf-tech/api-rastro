@@ -131,4 +131,52 @@ router.post("/", async (req, res) => {
   });
 });
 
+// ---------- PATCH /api/listings/:id (cambiar precio) ----------
+router.patch("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  if (!ObjectId.isValid(id)) {
+    res.status(400).json({ error: "El id no tiene un formato válido" });
+    return;
+  }
+
+  const body = req.body as Record<string, unknown>;
+  if (typeof body.price !== "number" || Number.isNaN(body.price) || body.price < 0) {
+    res.status(400).json({ error: "price debe ser un número mayor o igual que 0" });
+    return;
+  }
+
+  const updatedListing = await listingsCollection().findOneAndUpdate(
+    { _id: new ObjectId(id) },
+    { $set: { price: body.price } },
+    { returnDocument: "after" },
+  );
+
+  if (!updatedListing) {
+    res.status(404).json({ error: "No existe ningún anuncio con ese id" });
+    return;
+  }
+
+  res.json(updatedListing);
+});
+
+// ---------- DELETE /api/listings/:id (borrar anuncio) ----------
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  if (!ObjectId.isValid(id)) {
+    res.status(400).json({ error: "El id no tiene un formato válido" });
+    return;
+  }
+
+  const result = await listingsCollection().deleteOne({ _id: new ObjectId(id) });
+
+  if (result.deletedCount === 0) {
+    res.status(404).json({ error: "No existe ningún anuncio con ese id" });
+    return;
+  }
+
+  res.status(204).send();
+});
+
 export default router;
