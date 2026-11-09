@@ -16,7 +16,7 @@ Porque todos los query params de una URL llegan como cadenas de texto (`string`)
 Porque son campos controlados exclusivamente por la lógica del servidor para garantizar las reglas de negocio (un anuncio nuevo siempre empieza con 0 visitas y disponible). Si el cliente pudiera enviarlos, un usuario malintencionado podría manipular las visitas para aparentar falsa popularidad o alterar el estado inicial del producto (por ejemplo marcándolo directamente como vendido).
 
 ## Pregunta 4
-<!-- Ana baja el iPhone de 380 a 350 €. La oferta de Sara guarda una copia: listing.price: 380. ¿Debe tu PATCH cambiar también esa copia? ¿Por qué? -->
+No debe cambiarla. La oferta almacena una instantánea histórica (`listing.price`) que refleja las condiciones y el precio del anuncio en el momento exacto en el que se realizó la oferta. Modificar esa copia alteraría el contexto de la negociación pasada y rompería la trazabilidad de la oferta.
 
 ## Pregunta 5
 <!-- ¿Por qué ofertar por un anuncio vendido es 409 y no 400? -->
