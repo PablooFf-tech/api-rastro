@@ -1,0 +1,205 @@
+### ===================================================================
+### API de Rastro — Pruebas reproducibles
+### ===================================================================
+@baseUrl = http://localhost:3000
+
+### -------------------------------------------------------------------
+### PARTE 1 — Health Check
+### -------------------------------------------------------------------
+
+# 1. Health check con MongoDB activo (200 OK)
+GET {{baseUrl}}/api/health
+
+### -------------------------------------------------------------------
+### PARTE 2 — Leer anuncios
+### -------------------------------------------------------------------
+
+# 2. Listado general de anuncios (200 OK, 8 anuncios ordenados)
+GET {{baseUrl}}/api/listings
+
+# 3. Ficha detallada de un anuncio: iPhone (200 OK, views se incrementa)
+GET {{baseUrl}}/api/listings/670000000000000000000003
+
+# 4. Ficha con id de formato inválido (400 Bad Request)
+GET {{baseUrl}}/api/listings/abc
+
+# 5. Ficha con id inexistente (404 Not Found)
+GET {{baseUrl}}/api/listings/670000000000000000000099
+
+### -------------------------------------------------------------------
+### PARTE 3 — Filtrar anuncios
+### -------------------------------------------------------------------
+
+# 6. Filtro por categoría Cars (200 OK, 2 anuncios)
+GET {{baseUrl}}/api/listings?category=Cars
+
+# 7. Filtro por ciudad Valencia (200 OK, 4 anuncios)
+GET {{baseUrl}}/api/listings?city=Valencia
+
+# 8. Filtro por precio máximo 100 (200 OK, 3 anuncios)
+GET {{baseUrl}}/api/listings?maxPrice=100
+
+# 9. Filtros combinados: Phones, Valencia, maxPrice 400 (200 OK, 2 anuncios)
+GET {{baseUrl}}/api/listings?category=Phones&city=Valencia&maxPrice=400
+
+# 10. Filtro con precio no numérico (400 Bad Request)
+GET {{baseUrl}}/api/listings?maxPrice=abc
+
+### -------------------------------------------------------------------
+### PARTE 4 — Publicar anuncio
+### -------------------------------------------------------------------
+
+# 11. Publicar anuncio válido (201 Created)
+POST {{baseUrl}}/api/listings
+Content-Type: application/json
+
+{
+  "title": "Bicicleta de montaña Orbea",
+  "description": "Revisada en taller.",
+  "price": 300,
+  "category": "Sports",
+  "city": "Castellón",
+  "sellerId": "660000000000000000000004",
+  "attributes": {
+    "size": "L",
+    "type": "mountain",
+    "wheelInches": 29
+  }
+}
+
+# 12. Publicar anuncio ignorando campos protegidos (201 Created, views: 0 y AVAILABLE)
+POST {{baseUrl}}/api/listings
+Content-Type: application/json
+
+{
+  "title": "Bicicleta de carretera",
+  "description": "Muy ligera.",
+  "price": 500,
+  "category": "Sports",
+  "city": "Castellón",
+  "sellerId": "660000000000000000000004",
+  "views": 9999,
+  "status": "SOLD"
+}
+
+# 13. Publicar con precio como texto (400 Bad Request)
+POST {{baseUrl}}/api/listings
+Content-Type: application/json
+
+{
+  "title": "Bicicleta",
+  "description": "Texto",
+  "price": "75",
+  "category": "Sports",
+  "city": "Castellón",
+  "sellerId": "660000000000000000000004"
+}
+
+# 14. Publicar sin campo obligatorio title (400 Bad Request)
+POST {{baseUrl}}/api/listings
+Content-Type: application/json
+
+{
+  "description": "Texto",
+  "price": 75,
+  "category": "Sports",
+  "city": "Castellón",
+  "sellerId": "660000000000000000000004"
+}
+
+# 15. Publicar con sellerId que no existe (400 Bad Request)
+POST {{baseUrl}}/api/listings
+Content-Type: application/json
+
+{
+  "title": "Bicicleta",
+  "description": "Texto",
+  "price": 75,
+  "category": "Sports",
+  "city": "Castellón",
+  "sellerId": "660000000000000000000099"
+}
+
+### -------------------------------------------------------------------
+### PARTE 5 — Cambiar precio y borrar
+### -------------------------------------------------------------------
+
+# 16. Cambiar precio válido (200 OK, Xiaomi con price: 80)
+PATCH {{baseUrl}}/api/listings/670000000000000000000005
+Content-Type: application/json
+
+{
+  "price": 80
+}
+
+# 17. Cambiar precio con texto no numérico (400 Bad Request)
+PATCH {{baseUrl}}/api/listings/670000000000000000000005
+Content-Type: application/json
+
+{
+  "price": "barato"
+}
+
+# 18. Cambiar precio de anuncio que no existe (404 Not Found)
+PATCH {{baseUrl}}/api/listings/670000000000000000000099
+Content-Type: application/json
+
+{
+  "price": 1
+}
+
+# 19. Borrar anuncio existente (204 No Content)
+DELETE {{baseUrl}}/api/listings/670000000000000000000006
+
+# 20. Borrar el mismo anuncio de nuevo (404 Not Found)
+DELETE {{baseUrl}}/api/listings/670000000000000000000006
+
+### -------------------------------------------------------------------
+### PARTE 6 — Ofertas
+### -------------------------------------------------------------------
+
+# 21. Crear oferta válida por anuncio disponible (201 Created)
+POST {{baseUrl}}/api/offers
+Content-Type: application/json
+
+{
+  "listingId": "670000000000000000000008",
+  "buyerId": "660000000000000000000002",
+  "amount": 100
+}
+
+# 22. Crear oferta por anuncio vendido (409 Conflict)
+POST {{baseUrl}}/api/offers
+Content-Type: application/json
+
+{
+  "listingId": "670000000000000000000004",
+  "buyerId": "660000000000000000000005",
+  "amount": 100
+}
+
+# 23. Crear oferta con amount = 0 (400 Bad Request)
+POST {{baseUrl}}/api/offers
+Content-Type: application/json
+
+{
+  "listingId": "670000000000000000000008",
+  "buyerId": "660000000000000000000002",
+  "amount": 0
+}
+
+# 24. Crear oferta con listingId que no existe (400 Bad Request)
+POST {{baseUrl}}/api/offers
+Content-Type: application/json
+
+{
+  "listingId": "670000000000000000000099",
+  "buyerId": "660000000000000000000002",
+  "amount": 50
+}
+
+# 25. Ver ofertas de un anuncio existente: Seat Ibiza (200 OK, 2 ofertas)
+GET {{baseUrl}}/api/listings/670000000000000000000001/offers
+
+# 26. Ver ofertas de un anuncio inexistente (404 Not Found)
+GET {{baseUrl}}/api/listings/670000000000000000000099/offers
